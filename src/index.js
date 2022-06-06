@@ -6,6 +6,8 @@ const delBtn = document.getElementById("del-btn")
 const todoListEl = document.getElementById("todo-list-el")
 const todoFromLocalStorage = JSON.parse(localStorage.getItem("todo"))
 
+let isPlaying = false
+
 const classNameTodoList = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
 rounded-lg w-full shadow-inner shadow-stone-900`
 
@@ -81,7 +83,10 @@ function getTodoHtml(todo) {
   listTodo.innerHTML = `
   <button class="" onclick="toggleTodo(${id})">${completed ? "✅" : "⬜️"}</button>
   <span class="font-semibold mx-7 text-sm${completed ? " line-through" : ""}">${text}</span>
-  <button class="text-xs" onclick="deleteTodo(${id})">❌</button>
+  <div class="flex">
+    <button class="w-4 h-4 bg-green-400 rounded-full mr-5 shadow-inner shadow-lime-400" onclick="startStopTimer(id)"></button>
+    <button class="text-xs" onclick="deleteTodo(${id})">❌</button>
+  </div>
   `
   return listTodo.outerHTML
 }
@@ -321,8 +326,42 @@ if (todoArray.length > 0) {
 tableEl.innerHTML = getTableHtml(todoArray)
 }
 
+// Ui Player functions
+const uiPlayerEl = document.getElementById("ui-player-el")
+
+function getTodoName(todo) {
+  return todo.text
+}
+
+function getUiPlayerHtml() {
+  return `
+  <div class="fixed bottom-6 m-0 -translate-x-1/2 left-1/2 backdrop-blur-sm w-60 float-none rounded-full">
+  <div id="container-ui-timer" class=" bg-opacity-40 bg-rose-200 px-4 pb-2 pt-1 float flex flex-col w-60 items-center rounded-full shadow-lg shadow-stone-900">
+    <p id="ui-player-activity-el" 
+    class="text-sm mb-2 border-b-2 border-amber-300 text-amber-300 py px-2 w-44 truncate overflow-hidden font-semibold">Make a to-do list for your week</p>
+    <div class="justify-between inline-flex">
+      <div>
+        <button id="start-stop-timer-btn">Play</button>
+        <button id="reset-timer-btn" class="mx-2">Reset</button>
+        <button id="save-timer-btn">Save</button>
+      </div>
+      <div class="w-16">
+        <span id="timer-el" class="ml-4 px-2 py-1 text-sm text-right bg-opacity-20 bg-stone-800 font-medium text-stone-200 rounded-full">0:00</span>
+      </div>
+    </div>
+  </div>
+</div>
+  `
+}
+
+function renderUiPlayer() {
+  uiPlayerEl.innerHTML = getUiPlayerHtml()
+}
+
+
+renderUiPlayer()
+
 // Stopwatch functions
-let isPlaying = false
 let secondsTracked = 0
 let totalTimeTracked = 0
 let interval
