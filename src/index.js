@@ -6,6 +6,9 @@ const delBtn = document.getElementById("del-btn")
 const todoListEl = document.getElementById("todo-list-el")
 const todoFromLocalStorage = JSON.parse(localStorage.getItem("todo"))
 
+const classNameTodoList = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
+rounded-lg w-full shadow-inner shadow-stone-900`
+
 if (todoFromLocalStorage) {
   todoArray = todoFromLocalStorage
   renderTodos(todoFromLocalStorage)
@@ -74,8 +77,7 @@ function getTodoHtml(todo) {
   listTodo.setAttribute("data-order", order)
   listTodo.id = "todo"
   listTodo.draggable = true
-  listTodo.className = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
-  rounded-lg w-full shadow-inner shadow-stone-900`
+  listTodo.className = classNameTodoList
   listTodo.innerHTML = `
   <button class="" onclick="toggleTodo(${id})">${completed ? "✅" : "⬜️"}</button>
   <span class="font-semibold mx-7 text-sm${completed ? " line-through" : ""}">${text}</span>
@@ -129,12 +131,14 @@ function sortedTodoArray() {
 }
 
 // Drag and drop functions
+
 function addEventListenerToTodos() {
   const todos = document.querySelectorAll("#todo")
   const todoList = document.querySelectorAll("#todo-list-el li")
 
   todos.forEach((todo) => {
     todo.addEventListener("dragstart", dragStart)
+    todo.addEventListener("dragend", dragEnd)
   })
 
   todoList.forEach((todo) => {
@@ -144,9 +148,15 @@ function addEventListenerToTodos() {
     todo.addEventListener("dragleave", dragLeave)
   })
 }
-let dragStartId
+
 function dragStart() {
+  // this.className += " border-b-2 border-green-500"
+  // setTimeout(() => (this.className = classNameTodoList), 0)
   dragStartOrder = +this.closest("li").getAttribute("data-order")
+}
+
+function dragEnd() {
+  this.className = classNameTodoList
 }
 
 function dragOver(e) {
@@ -160,11 +170,72 @@ function drop() {
 
 function dragEnter(e) {
   e.preventDefault()
+  this.className += " border-2 border-green-200 animate-pulse"
 }
 
 function dragLeave() {
+  this.className = classNameTodoList
 }
 
+// Swapping order of todos
+function swapOrder(dragStartOrder, dragEndOrder) {
+  todoArray.forEach((todo) => {
+    if (todo.order === dragStartOrder) {
+      todo.order = dragEndOrder
+    } else if (todo.order === dragEndOrder) {
+      todo.order = dragStartOrder
+    }
+  })
+  renderTodos(todoArray)
+  localStorage.setItem("todo", JSON.stringify(todoArray))
+}
+
+function addEventListenerToTodos() {
+  const todos = document.querySelectorAll("#todo")
+  const todoList = document.querySelectorAll("#todo-list-el li")
+
+  todos.forEach((todo) => {
+    todo.addEventListener("dragstart", dragStart)
+    todo.addEventListener("dragend", dragEnd)
+  })
+
+  todoList.forEach((todo) => {
+    todo.addEventListener("dragover", dragOver)
+    todo.addEventListener("drop", drop)
+    todo.addEventListener("dragenter", dragEnter)
+    todo.addEventListener("dragleave", dragLeave)
+  })
+}
+
+function dragStart() {
+  this.className += "opacity-10 animate-bounce"
+  setTimeout(() => (this.className = classNameTodoList), 0)
+  dragStartOrder = +this.closest("li").getAttribute("data-order")
+}
+
+function dragEnd() {
+  this.className = classNameTodoList
+}
+
+function dragOver(e) {
+  e.preventDefault()
+}
+
+function drop() {
+  const dragEndOrder = +this.getAttribute("data-order")
+  swapOrder(dragStartOrder, dragEndOrder)
+}
+
+function dragEnter(e) {
+  e.preventDefault()
+  this.className += " border-2 border-stone-200 animate-pulse"
+}
+
+function dragLeave() {
+  this.className = classNameTodoList
+}
+
+// Swapping order of todos
 function swapOrder(dragStartOrder, dragEndOrder) {
   todoArray.forEach((todo) => {
     if (todo.order === dragStartOrder) {
@@ -200,6 +271,7 @@ function getBoredActivity() {
 // Notifications functions
 function renderNotifications(message) {
   const notificationEl = document.getElementById("notification-el")
+  const notification = document.createElement("div")
   notificationEl.className = ""
   notificationEl.innerHTML = `
     <p class="fixed right-0 bg-cyan-500 text-white text-center py-1 px-3 
