@@ -15,3 +15,19 @@
 //   })
 //   console.log(todoArray)
 // }
+
+function addEventListenerToTodos() {
+  const todos = document.querySelectorAll("#todo")
+  const todoList = document.querySelectorAll("#todo-list li")
+
+  todos.forEach((todo) => {
+    todo.addEventListener("dragstart", dragStart)
+  })
+
+  todoList.forEach((todo) => {
+    todo.addEventListener("dragover", dragOver)
+    todo.addEventListener("drop", drop)
+    todo.addEventListener("dragenter", dragEnter)
+    todo.addEventListener("dragleave", dragLeave)
+  })
+}

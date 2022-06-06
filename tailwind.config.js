@@ -51,6 +51,24 @@ module.exports = {
             opacity: "1",
           },
         },
+        "fade-in-down-fade-out-up": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(-10px)",
+          },
+          "20%": {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+          "80%": {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translateY(-10px)",
+          },
+        },
       },
       animation: {
         "fade-in-down": "fade-in-down 0.5s ease-out",
@@ -58,6 +76,7 @@ module.exports = {
         "fade-in-up": "fade-in-up 0.5s ease-out",
         "fade-out-up": "fade-out-up 0.5s ease-out",
         "fade-in": "fade-in 0.5s ease-out",
+        "fade-in-down-fade-out-up": "fade-in-down-fade-out-up 4s ease-out",
       },
     },
   },

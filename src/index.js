@@ -12,8 +12,9 @@ if (todoFromLocalStorage) {
 }
 
 // Event Listeners for DOM elements
-inputEl.addEventListener("keypress", event => {
-  if (event.key === "Enter") {  // if enter key is pressed
+inputEl.addEventListener("keypress", (event) => {
+  if (event.key === "Enter") {
+    // if enter key is pressed
     if (inputEl.value) {
       addTodo()
     }
@@ -23,15 +24,24 @@ inputEl.addEventListener("keypress", event => {
 addBtn.addEventListener("click", () => {
   if (inputEl.value) {
     addTodo()
-  }})
+  }
+})
 
 delBtn.addEventListener("click", () => {
   if (todoArray.length) {
-    deleteAllTodo()
+    getConfirm("Are you sure you want to delete all todos?", deleteAllTodo)
   }
 })
 
 // Miscellaneous functions
+function getConfirm(question, callback) {
+  if (confirm(question)) {
+    callback()
+  } else {
+    return false
+  }
+}
+
 function getUID() {
   return Date.now() + Math.random()
 }
@@ -49,28 +59,33 @@ function copyToClipboard(value) {
 // Todo functions
 function addTodo() {
   const id = getUID()
-  const todo = {id, text: inputEl.value, completed: false, timeTracked: 0, order: todoArray.length}
+  const todo = { id, text: inputEl.value, completed: false, timeTracked: 0, order: todoArray.length }
   todoArray.push(todo)
   renderTodos(todoArray)
   renderTable(todoArray)
+  renderNotifications("🔔 Added todo")
   inputEl.value = ""
   localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
 function getTodoHtml(todo) {
-  return `
-  <li class="flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 rounded-lg w-full shadow-inner shadow-stone-900 animate-fade-in-down"
-  id="${todo.id}">
-  <button class="" onclick="toggleTodo(${todo.id})">
-  ${todo.completed ? "✅" : "⬜️"}</button>
-  <span class="font-semibold mx-7 text-sm${todo.completed ? " line-through" : ""}">${todo.text}</span>
-  <button class="text-xs" onclick="deleteTodo(${todo.id})">❌</button>
-  </li>
+  const { id, text, completed, order } = todo
+  const listTodo = document.createElement("li")
+  listTodo.setAttribute("data-order", order)
+  listTodo.id = "todo"
+  listTodo.draggable = true
+  listTodo.className = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
+  rounded-lg w-full shadow-inner shadow-stone-900`
+  listTodo.innerHTML = `
+  <button class="" onclick="toggleTodo(${id})">${completed ? "✅" : "⬜️"}</button>
+  <span class="font-semibold mx-7 text-sm${completed ? " line-through" : ""}">${text}</span>
+  <button class="text-xs" onclick="deleteTodo(${id})">❌</button>
   `
+  return listTodo.outerHTML
 }
 
 function getTodosHtml(todoArray) {
-  return todoArray.map(todo => getTodoHtml(todo)).join("")
+  return todoArray.map((todo) => getTodoHtml(todo)).join("")
 }
 
 // function renderTodo(todo) {
@@ -81,27 +96,31 @@ function getTodosHtml(todoArray) {
 function renderTodos(todoArray) {
   sortedTodoArray()
   todoListEl.innerHTML = getTodosHtml(todoArray)
+  addEventListenerToTodos()
 }
 
 function toggleTodo(id) {
-  todoArray.forEach(todo => {
+  todoArray.forEach((todo) => {
     if (todo.id === id) {
       todo.completed = !todo.completed
     }
     renderTodos(todoArray)
+    renderNotifications('🔔 Todo "' + todo.text + '" ' + (todo.completed ? "completed" : "uncompleted"))
   })
   localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
 function deleteTodo(id) {
-  todoArray = todoArray.filter(todo => todo.id !== id)
+  todoArray = todoArray.filter((todo) => todo.id !== id)
   renderTodos(todoArray)
   localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
 function deleteAllTodo() {
+  alert("Are you sure you want to delete all todos?")
   todoArray = []
   renderTodos(todoArray)
+  renderNotifications("🔔 All todos deleted")
   localStorage.removeItem("todo")
 }
 
@@ -110,8 +129,52 @@ function sortedTodoArray() {
 }
 
 // Drag and drop functions
-function dragStart(event) {
-  event.dataTransfer.setData("text/plain", event.target.id)
+function addEventListenerToTodos() {
+  const todos = document.querySelectorAll("#todo")
+  const todoList = document.querySelectorAll("#todo-list-el li")
+
+  todos.forEach((todo) => {
+    todo.addEventListener("dragstart", dragStart)
+  })
+
+  todoList.forEach((todo) => {
+    todo.addEventListener("dragover", dragOver)
+    todo.addEventListener("drop", drop)
+    todo.addEventListener("dragenter", dragEnter)
+    todo.addEventListener("dragleave", dragLeave)
+  })
+}
+let dragStartId
+function dragStart() {
+  dragStartOrder = +this.closest("li").getAttribute("data-order")
+}
+
+function dragOver(e) {
+  e.preventDefault()
+}
+
+function drop() {
+  const dragEndOrder = +this.getAttribute("data-order")
+  swapOrder(dragStartOrder, dragEndOrder)
+}
+
+function dragEnter(e) {
+  e.preventDefault()
+}
+
+function dragLeave() {
+}
+
+function swapOrder(dragStartOrder, dragEndOrder) {
+  todoArray.forEach((todo) => {
+    if (todo.order === dragStartOrder) {
+      todo.order = dragEndOrder
+    } else if (todo.order === dragEndOrder) {
+      todo.order = dragStartOrder
+    }
+  })
+  renderTodos(todoArray)
+  localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
 
@@ -119,15 +182,16 @@ function dragStart(event) {
 // BoredApp functions
 function getBoredActivity() {
   fetch("https://www.boredapi.com/api/activity/")
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       const activity = data.activity
       copyToClipboard(activity)
       const btn = document.getElementById("activity-idea-btn")
       btn.className = ""
       btn.innerHTML = `
-      <span class="bg-amber-400 text-sm text-stone-700 rounded py-1 px-3 font-semibold text-center block z-40 animate-fade-in
-      shadow transition ease-in-out delay-100 hover:scale-110 hover:bg-yellow-400 hover:shadow-lg hover:shadow-yellow-400/50"
+      <span class="bg-amber-400 text-sm text-stone-700 rounded py-1 px-3 font-semibold
+      text-center block z-40 animate-fade-in shadow transition ease-in-out delay-100 hover:scale-110
+      hover:bg-yellow-400 hover:shadow-lg hover:shadow-yellow-400/50"
       >${activity}</span>
       `
     })
@@ -138,15 +202,12 @@ function renderNotifications(message) {
   const notificationEl = document.getElementById("notification-el")
   notificationEl.className = ""
   notificationEl.innerHTML = `
-    <p class="fixed right-0 float-none bg-cyan-500 text-white text-center py-1 px-3 font-semibold text-xs rounded m-3 animate-fade-in-down">${message}</p>
+    <p class="fixed right-0 bg-cyan-500 text-white text-center py-1 px-3 
+    font-semibold text-xs rounded m-3 animate-fade-in-down-fade-out-up">${message}</p>
   `
   setTimeout(() => {
-    notificationEl.className = "animate-fade-out-up"
-  }, 2500)
-  setTimeout(() => {
     notificationEl.className = "hidden"
-  }
-  , 3000)
+  }, 4000)
 }
 
 // Table functions
@@ -155,21 +216,25 @@ function getTableHtml(todoArray) {
   <table class="table-auto w-full my-4">
   <thead>
     <tr>
-      <th class="px-4 py-2">C.</th>
-      <th class="px-4 py-2">Text</th>
-      <th class="px-4 py-2">Time tracked</th>
-      <th class="px-4 py-2">Order</th>
+      <th class="border-b px-4 py-2 text-center">C.</th>
+      <th class="border-b px-4 py-2 text-center">Text</th>
+      <th class="border-b px-4 py-2 text-center">Time tracked</th>
+      <th class="border-b px-4 py-2 text-center">Order</th>
     </tr>
   </thead>
   <tbody>
-    ${todoArray.map(todo => `
+    ${todoArray
+      .map(
+        (todo) => `
     <tr>
-      <td class="border px-4 py-2">${todo.completed ? "✅" : "⬜️"}</td>
-      <td class="border px-4 py-2">${todo.text}</td>
-      <td class="border px-4 py-2">${todo.timeTracked}</td>
-      <td class="border px-4 py-2">${todo.order}</td>
+      <td class="border-b px-4 py-2 text-center">${todo.completed ? "✅" : "⬜️"}</td>
+      <td class="border-b px-4 py-2 text-center">${todo.text}</td>
+      <td class="border-b px-4 py-2 text-center">${todo.timeTracked}</td>
+      <td class="border-b py-2 text-center">${todo.order}</td>
       </tr>
-      `).join("")}
+      `
+      )
+      .join("")}
   </tbody>
   </table>
   `
@@ -180,7 +245,9 @@ function renderTable(todoArray) {
 }
 
 const tableEl = document.getElementById("table-el")
+if (todoArray.length > 0) {
 tableEl.innerHTML = getTableHtml(todoArray)
+}
 
 // Stopwatch functions
 let isPlaying = false
@@ -193,7 +260,6 @@ const timerEl = document.getElementById("timer-el")
 const startStopTimerBtn = document.getElementById("start-stop-timer-btn")
 const resetTimerBtn = document.getElementById("reset-timer-btn")
 const saveTimerBtn = document.getElementById("save-timer-btn")
-
 
 startStopTimerBtn.addEventListener("click", () => startStopTimer(todoArray[0].id))
 resetTimerBtn.addEventListener("click", () => resetTimer())
@@ -236,7 +302,7 @@ function resetTimer() {
     isPlaying = false
     clearInterval(interval)
     startStopTimerBtn.innerHTML = "Start"
-  } 
+  }
   renderTimer()
 }
 
@@ -245,7 +311,7 @@ function saveTimer() {
     stopTimer()
   }
   if (idTodo) {
-    todoArray.forEach(todo => {
+    todoArray.forEach((todo) => {
       if (todo.id === idTodo) {
         todo.timeTracked += secondsTracked
         totalTimeTracked += secondsTracked
@@ -259,7 +325,9 @@ function saveTimer() {
 // Track time functions render
 const timeTrackedEl = document.getElementById("time-tracked-el")
 
-timeTrackedEl.textContent = todoArray[0].timeTracked
+if (todoArray.length > 0) {
+  timeTrackedEl.textContent = todoArray[0].timeTracked
+}
 
 function renderTimeTrackedRequest(id) {
   timeTrackedEl.textContent = todoArray[0].timeTracked
