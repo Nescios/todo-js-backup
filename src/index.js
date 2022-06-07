@@ -9,7 +9,7 @@ const todoFromLocalStorage = JSON.parse(localStorage.getItem("todo"))
 let isPlaying = false
 
 const classNameTodoList = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
-rounded-lg w-full shadow-inner shadow-stone-900`
+rounded-lg w-full shadow-inner shadow-stone-900 cursor-grab`
 
 if (todoFromLocalStorage) {
   todoArray = todoFromLocalStorage
@@ -156,7 +156,8 @@ function addEventListenerToTodos() {
 
 function dragStart() {
   // this.className += " border-b-2 border-green-500"
-  // setTimeout(() => (this.className = classNameTodoList), 0)
+  this.className += " cursor-grabbing"
+  setTimeout(() => (this.className = classNameTodoList + " cursor-grabbing"), 0)
   dragStartOrder = +this.closest("li").getAttribute("data-order")
 }
 
