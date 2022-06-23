@@ -1,19 +1,26 @@
 let todoArray = []
 // Get Elements from DOM
+const todoFromLocalStorage = JSON.parse(localStorage.getItem("todo"))
 const inputEl = document.getElementById("input-el")
 const addBtn = document.getElementById("add-btn")
 const delBtn = document.getElementById("del-btn")
 const todoListEl = document.getElementById("todo-list-el")
-const todoFromLocalStorage = JSON.parse(localStorage.getItem("todo"))
+const tableEl = document.getElementById("table-el")
+const uiPlayerEl = document.getElementById("ui-player-el")
 
 let isPlaying = false
+let secondsTracked = 0
+let interval
+let idTodo = 0
 
 const classNameTodoList = `flex justify-between text-center items-center px-5 py-2 my-1 bg-stone-600 
 rounded-lg w-full shadow-inner shadow-stone-900 cursor-grab`
 
+// Grab data from local storage and render todo list
 if (todoFromLocalStorage) {
   todoArray = todoFromLocalStorage
-  renderTodos(todoFromLocalStorage)
+  renderTodos(todoArray)
+  renderTable(todoArray)
 }
 
 // Event Listeners for DOM elements
@@ -84,8 +91,8 @@ function getTodoHtml(todo) {
   <button class="" onclick="toggleTodo(${id})">${completed ? "✅" : "⬜️"}</button>
   <span class="font-semibold mx-7 text-sm${completed ? " line-through" : ""}">${text}</span>
   <div class="flex">
-    <button class="w-4 h-4 bg-green-400 rounded-full mr-5 shadow-inner shadow-lime-400" onclick="startStopTimer(id)"></button>
-    <button class="text-xs" onclick="deleteTodo(${id})">❌</button>
+    <button class="w-4 h-4 bg-green-400 rounded-full mr-5 shadow-inner shadow-lime-400 transition ease-in-out duration-300 delay-100 hover:scale-110 hover:bg-red-500 hover:shadow-inner" onclick="startStopTimer(id)"></button>
+    <button class="text-xs transition ease-in-out duration-300 delay-100 hover:scale-125 hover:shadow" onclick="deleteTodo(${id})">❌</button>
   </div>
   `
   return listTodo.outerHTML
@@ -120,6 +127,7 @@ function toggleTodo(id) {
 function deleteTodo(id) {
   todoArray = todoArray.filter((todo) => todo.id !== id)
   renderTodos(todoArray)
+  renderNotifications("🔔 Todo deleted")
   localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
@@ -136,7 +144,6 @@ function sortedTodoArray() {
 }
 
 // Drag and drop functions
-
 function addEventListenerToTodos() {
   const todos = document.querySelectorAll("#todo")
   const todoList = document.querySelectorAll("#todo-list-el li")
@@ -254,8 +261,6 @@ function swapOrder(dragStartOrder, dragEndOrder) {
   localStorage.setItem("todo", JSON.stringify(todoArray))
 }
 
-
-
 // BoredApp functions
 function getBoredActivity() {
   fetch("https://www.boredapi.com/api/activity/")
@@ -301,18 +306,14 @@ function getTableHtml(todoArray) {
     </tr>
   </thead>
   <tbody>
-    ${todoArray
-      .map(
-        (todo) => `
+    ${todoArray.map((todo) => `
     <tr>
       <td class="border-b px-4 py-2 text-center">${todo.completed ? "✅" : "⬜️"}</td>
       <td class="border-b px-4 py-2 text-center">${todo.text}</td>
       <td class="border-b px-4 py-2 text-center">${todo.timeTracked}</td>
       <td class="border-b py-2 text-center">${todo.order}</td>
-      </tr>
-      `
-      )
-      .join("")}
+      </tr>`
+    ).join("")}
   </tbody>
   </table>
   `
@@ -322,61 +323,32 @@ function renderTable(todoArray) {
   tableEl.innerHTML = getTableHtml(todoArray)
 }
 
-const tableEl = document.getElementById("table-el")
-if (todoArray.length > 0) {
-tableEl.innerHTML = getTableHtml(todoArray)
-}
-
 // Ui Player functions
-const uiPlayerEl = document.getElementById("ui-player-el")
-
-function getTodoName(todo) {
-  return todo.text
-}
-
-function getUiPlayerHtml() {
+function getUiPlayerHtmlWithTodo(id) {
   return `
   <div class="fixed bottom-6 m-0 -translate-x-1/2 left-1/2 backdrop-blur-sm w-60 float-none rounded-full">
   <div id="container-ui-timer" class=" bg-opacity-40 bg-rose-200 px-4 pb-2 pt-1 float flex flex-col w-60 items-center rounded-full shadow-lg shadow-stone-900">
-    <p id="ui-player-activity-el" 
-    class="text-sm mb-2 border-b-2 border-amber-300 text-amber-300 py px-2 w-44 truncate overflow-hidden font-semibold">Make a to-do list for your week</p>
+    <p id="ui-player-activity-el"
+    class="text-sm mb-2 border-b-2 border-amber-300 text-amber-300 py px-2 w-44 truncate overflow-hidden font-semibold">${getTodoText(id)}</p>
     <div class="justify-between inline-flex">
       <div>
-        <button id="start-stop-timer-btn">Play</button>
-        <button id="reset-timer-btn" class="mx-2">Reset</button>
-        <button id="save-timer-btn">Save</button>
+        <button id="start-stop-timer-btn" onclick="${startStopTimer(id)}">${isPlaying ? "Pause" : "Play"}</button>
+        <button id="reset-timer-btn" class="mx-2" onclick="${resetTimer()}">Reset</button>
+        <button id="save-timer-btn" onclick="${saveTimer()}">Save</button>
       </div>
       <div class="w-16">
-        <span id="timer-el" class="ml-4 px-2 py-1 text-sm text-right bg-opacity-20 bg-stone-800 font-medium text-stone-200 rounded-full">0:00</span>
+        <span id="timer-el" class="ml-4 px-2 py-1 text-sm text-right bg-opacity-20 bg-stone-800 font-medium text-stone-200 rounded-full">${getHtmlTime(secondsTracked)}</span>
       </div>
     </div>
   </div>
-</div>
-  `
+</div>`
 }
 
-function renderUiPlayer() {
-  uiPlayerEl.innerHTML = getUiPlayerHtml()
+function renderUiPlayer(todo) {
+  uiPlayerEl.innerHTML = getUiPlayerHtmlWithTodo(todo)
 }
-
-
-renderUiPlayer()
 
 // Stopwatch functions
-let secondsTracked = 0
-let totalTimeTracked = 0
-let interval
-let idTodo = 0
-
-const timerEl = document.getElementById("timer-el")
-const startStopTimerBtn = document.getElementById("start-stop-timer-btn")
-const resetTimerBtn = document.getElementById("reset-timer-btn")
-const saveTimerBtn = document.getElementById("save-timer-btn")
-
-startStopTimerBtn.addEventListener("click", () => startStopTimer(todoArray[0].id))
-resetTimerBtn.addEventListener("click", () => resetTimer())
-saveTimerBtn.addEventListener("click", () => saveTimer())
-
 function getHtmlTime(time) {
   const minutes = Math.floor(time / 60)
   const seconds = time % 60
@@ -384,13 +356,20 @@ function getHtmlTime(time) {
 }
 
 function renderTimer() {
-  timerEl.innerHTML = getHtmlTime(secondsTracked)
+  return getHtmlTime(secondsTracked)
 }
 
 function stopTimer() {
   clearInterval(interval)
   isPlaying = false
-  startStopTimerBtn.innerHTML = "Play"
+}
+
+function getTodoById(id) {
+  return todoArray.find((todo) => todo.id === id)
+}
+
+function getTodoText(id) {
+  return getTodoById(id).text
 }
 
 function startStopTimer(id) {
@@ -399,11 +378,11 @@ function startStopTimer(id) {
     stopTimer()
   } else {
     isPlaying = true
+    renderUiPlayer(idTodo)
     interval = setInterval(() => {
       secondsTracked++
-      renderTimer()
+      getHtmlTime(secondsTracked)
     }, 1000)
-    startStopTimerBtn.innerHTML = "Stop"
   }
 }
 
@@ -413,7 +392,6 @@ function resetTimer() {
   if (isPlaying) {
     isPlaying = false
     clearInterval(interval)
-    startStopTimerBtn.innerHTML = "Start"
   }
   renderTimer()
 }
@@ -433,6 +411,7 @@ function saveTimer() {
   }
   resetTimer()
 }
+
 
 // Track time functions render
 const timeTrackedEl = document.getElementById("time-tracked-el")
